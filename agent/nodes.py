@@ -124,7 +124,7 @@ def retrieve_node(state, config):
 
 # ── Qualify node ──────────────────────────────────────────────────────────────
 
-def qualify_node(state, config):
+def qualify_node(state, config=None):
     logger.info("Node: qualify_node")
     message  = _last_human_message(state)
     name     = state.get("collected_name")
@@ -154,7 +154,7 @@ def qualify_node(state, config):
 
 # ── Capture node ──────────────────────────────────────────────────────────────
 
-def capture_node(state, config):
+def capture_node(state, config=None):
     logger.info("Node: capture_node")
     name     = state.get("collected_name")
     email    = state.get("collected_email")
