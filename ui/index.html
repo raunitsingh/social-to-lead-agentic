@@ -213,6 +213,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 
 <script>
 // ── Session state ─────────────────────────────────────────────────────────────
+const SESSION_ID = 'sess-' + Math.random().toString(36).slice(2);
 const S = {
   intent: null,
   qualStarted: false,
@@ -255,19 +256,26 @@ async function sendMessage() {
   sendBtn.disabled = true;
 
   const typId = showTyping();
-  await sleep(500 + Math.random() * 400);
-
-  const resp = getResponse(text);
-  removeTyping(typId);
-
-  if (resp.leadCard) {
-    addLeadCard(resp.leadCard);
-    await sleep(200);
-    addBubble('agent', resp.text);
-  } else {
-    addBubble('agent', resp.text);
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ message: text, session_id: SESSION_ID })
+    });
+    const data = await res.json();
+    removeTyping(typId);
+    if (data.leadCard) { addLeadCard(data.leadCard); await sleep(200); }
+    addBubble('agent', data.text || data.error || 'Something went wrong.');
+    if (data.intent) S.intent = data.intent;
+    if (data.name) S.name = data.name;
+    if (data.email) S.email = data.email;
+    if (data.platform) S.platform = data.platform;
+    if (data.captured) S.captured = true;
+    if (data.name || data.email || data.platform) S.qualStarted = true;
+  } catch(e) {
+    removeTyping(typId);
+    addBubble('agent', 'Could not reach agent server. Is python server.py running?');
   }
-
   refreshSidebar();
   sendBtn.disabled = false;
   inputEl.focus();
