@@ -1,0 +1,87 @@
+{
+  "company": {
+    "name": "AutoStream",
+    "tagline": "Automated video editing tools for content creators.",
+    "description": "AutoStream is a SaaS platform providing AI-powered automated video editing tools for YouTubers, Instagram creators, and TikTokers."
+  },
+  "plans": [
+    {
+      "name": "Basic Plan",
+      "price_monthly": 29,
+      "price_currency": "USD",
+      "features": [
+        "10 videos per month",
+        "720p resolution export",
+        "Auto-cut and trim",
+        "Basic color correction",
+        "Email support"
+      ],
+      "limitations": [
+        "No AI captions",
+        "No 4K resolution",
+        "No 24/7 support"
+      ],
+      "best_for": "Beginner creators publishing occasionally"
+    },
+    {
+      "name": "Pro Plan",
+      "price_monthly": 79,
+      "price_currency": "USD",
+      "features": [
+        "Unlimited videos per month",
+        "4K resolution export",
+        "AI captions and subtitles",
+        "Advanced color grading",
+        "Priority 24/7 support",
+        "Auto-publish to YouTube and Instagram",
+        "Analytics dashboard"
+      ],
+      "limitations": [],
+      "best_for": "Professional creators and agencies"
+    }
+  ],
+  "policies": [
+    {
+      "policy": "Refund Policy",
+      "details": "No refunds after 7 days of purchase. Refund requests within the first 7 days will be processed in full."
+    },
+    {
+      "policy": "Support Policy",
+      "details": "24/7 live support is available exclusively for Pro Plan subscribers. Basic Plan users receive email support within 48 hours."
+    }
+  ],
+  "pricing_faq": [
+    {
+      "question": "Is there a free trial?",
+      "answer": "Yes, AutoStream offers a 7-day free trial on the Pro Plan. No credit card required."
+    },
+    {
+      "question": "Can I upgrade or downgrade?",
+      "answer": "Yes, you can switch plans anytime. Changes take effect next billing cycle."
+    }
+  ],
+  "features_detail": [
+    {
+      "feature": "AI Captions",
+      "available_on": [
+        "Pro Plan"
+      ],
+      "description": "Auto-generates accurate captions with 95%+ accuracy. Supports 20+ languages."
+    },
+    {
+      "feature": "Auto-Cut and Trim",
+      "available_on": [
+        "Basic Plan",
+        "Pro Plan"
+      ],
+      "description": "AI detects silences and filler words and removes them automatically."
+    },
+    {
+      "feature": "4K Export",
+      "available_on": [
+        "Pro Plan"
+      ],
+      "description": "Export in full 4K resolution. Basic Plan is capped at 720p."
+    }
+  ]
+}
