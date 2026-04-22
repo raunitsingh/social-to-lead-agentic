@@ -2,13 +2,13 @@
 
 ## Changes Made
 
-✅ **webhook.py** — Converted to production-ready FastAPI
+ **webhook.py** — Converted to production-ready FastAPI
 - Binds to `0.0.0.0:$PORT` (required for cloud platforms)
 - Serves `index.html` at root `/`
 - All chat/session endpoints consolidated
 - CORS enabled for frontend requests
 
-✅ **render.yaml** — Updated start command
+ **render.yaml** — Updated start command
 ```yaml
 startCommand: uvicorn webhook:app --host 0.0.0.0 --port $PORT --workers 1
 ```
@@ -16,7 +16,7 @@ startCommand: uvicorn webhook:app --host 0.0.0.0 --port $PORT --workers 1
 - `--host 0.0.0.0`: Binds to all interfaces
 - `--port $PORT`: Uses Render's dynamic PORT env var
 
-✅ **requirements.txt** — Dependencies optimized
+ **requirements.txt** — Dependencies optimized
 - Removed: Flask (replaced with FastAPI)
 - Added: FastAPI, uvicorn[standard]
 - Kept: LangChain, LangGraph, ChromaDB, etc. (no torch/nvidia)
