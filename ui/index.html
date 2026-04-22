@@ -251,34 +251,14 @@ async function sendMessage() {
   const typId = showTyping();
 
   try {
-    // ── Call Flask backend ──────────────────────────────────────────────────
-    const res  = await fetch('/chat', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ message: text, session_id: SESSION_ID }),
-    });
-
-    const resp = await res.json();
+    const reply = getLocalResponse(userText);
     removeTyping(typId);
-
-    if (resp.error) {
-      addBubble('agent', '⚠️ Error: ' + (resp.text || resp.error));
-    } else {
-      // Show lead card first if capture just happened
-      if (resp.leadCard) {
-        addLeadCard(resp.leadCard);
-        await sleep(200);
-      }
-      addBubble('agent', resp.text);
-
-      // Update sidebar from real agent state
-      refreshSidebar(resp);
-    }
-
-  } catch (err) {
+    addBubble('agent', reply.text);
+    if (reply.leadCard) showLeadCard(reply.leadCard);
+    updateSidebar();
+  } catch (e) {
     removeTyping(typId);
-    addBubble('agent', '⚠️ Could not reach the agent server. Is `python server.py` running?');
-    console.error(err);
+    addBubble('agent', 'Something went wrong. Please try again.');
   }
 
   sendBtn.disabled = false;
