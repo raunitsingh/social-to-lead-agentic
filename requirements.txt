@@ -8,6 +8,7 @@ chromadb
 sentence-transformers
 python-dotenv
 pydantic
-flask
+fastapi
+uvicorn[standard]
 supabase
 httpx
