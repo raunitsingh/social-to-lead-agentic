@@ -1,376 +1,302 @@
-<div align="center">
+# 🎬 AutoStream AI Sales Agent
+### Social-to-Lead Agentic Workflow — ServiceHive × Inflx Assignment
 
-<img src="https://img.shields.io/badge/AutoStream-AI%20Agent-0066FF?style=for-the-badge&logoColor=white" />
-<img src="https://img.shields.io/badge/LangGraph-Powered-00C896?style=for-the-badge&logoColor=white" />
-<img src="https://img.shields.io/badge/Groq-llama--3.3--70b-FF6B35?style=for-the-badge&logoColor=white" />
-<img src="https://img.shields.io/badge/RAG-FAISS%20%2B%20HuggingFace-8B5CF6?style=for-the-badge&logoColor=white" />
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python"/>
+  <img src="https://img.shields.io/badge/LangGraph-Agentic-green?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Groq-LLaMA_3.3_70B-orange?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/FAISS-RAG_Pipeline-purple?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Supabase-Database-teal?style=for-the-badge"/>
+</p>
 
-<br /><br />
-
-# AutoStream Conversational AI Agent
-
-### Social-to-Lead Agentic Workflow · ServiceHive / Inflx · ML Internship Assignment
-
-*An intelligent conversational agent that identifies high-intent users, answers product questions via RAG, and captures qualified leads — end to end.*
-
-<br />
-
-[Overview](#-overview) · [Demo](#-demo-flow) · [Architecture](#-architecture) · [Setup](#-quick-start) · [WhatsApp](#-whatsapp-deployment) · [Stack](#-tech-stack)
-
-</div>
+> A production-grade conversational AI agent for **AutoStream** — an AI-powered video editing SaaS. Built with LangGraph, FAISS-powered RAG, real-time lead capture, Supabase persistence, and a fully functional chat UI.
 
 ---
 
-## 🎯 Overview
+## 🚀 Live Demo
 
-AutoStream Agent is a **production-grade conversational AI** built for a fictional SaaS company that provides automated video editing tools for content creators. Unlike simple chatbots, this agent:
+**🌐 Try it now:** [`https://nemeses-deflator-aspirin.ngrok-free.app/ui/index.html`](https://nemeses-deflator-aspirin.ngrok-free.app/ui/index.html)
 
-- 🧠 **Understands intent** — classifies every message as greeting, product inquiry, or high-intent lead
-- 📚 **Retrieves knowledge** — answers pricing and policy questions grounded in a local knowledge base (RAG)
-- 🎯 **Qualifies leads** — collects name, email, and platform through natural conversation
-- ⚡ **Captures leads** — fires a backend tool only after all three fields are confirmed
-- 💾 **Remembers context** — maintains full conversation memory across 5–6 turns per session
+> Click **"Visit Site"** on the ngrok warning page to access the demo.
 
 ---
 
-## 🎬 Demo Flow
+## ✅ Assignment Requirements — All Delivered
+
+| Requirement | Status |
+|---|---|
+| Intent classification (greeting / inquiry / high-intent) | ✅ Done |
+| RAG-powered knowledge retrieval (FAISS + JSON KB) | ✅ Done |
+| Lead qualification (name, email, platform) | ✅ Done |
+| Mock lead capture tool execution | ✅ Done |
+| LangGraph state management across 5–6 turns | ✅ Done |
+| Python 3.9+, LangChain / LangGraph | ✅ Done |
+| requirements.txt | ✅ Done |
+| README with architecture + WhatsApp deployment | ✅ Done |
+| Demo video | ✅ Done |
+
+---
+
+## ⭐ Beyond the Assignment — Extra Features Built
+
+These were **not required** but were built to demonstrate real-world production thinking:
+
+| Extra Feature | Details |
+|---|---|
+| 🖥️ **Full Chat UI** | Custom HTML/CSS/JS chat interface with live sidebar showing intent, collected lead fields, and lead card on capture |
+| 🗄️ **Supabase Integration** | Every conversation turn and captured lead is persisted to a real Postgres database in real time |
+| 🌐 **Live Public Deployment** | Exposed via ngrok — anyone can access and use the agent without running it locally |
+| 📊 **Lead Dashboard** | Captured leads visible in Supabase Table Editor with session ID, timestamp, platform |
+| 🧠 **Rich RAG Responses** | Two-stage LLM pipeline: RAG retrieval + formatting prompt for structured, emoji-rich responses |
+| 🔄 **Multi-Provider LLM Support** | Switchable between Groq, OpenAI, Anthropic, and Google via a single config variable |
+| 🧵 **Session Management** | Each browser session gets its own LangGraph thread ID, enabling true multi-user concurrency |
+| 📝 **Conversation Logging** | Full human + AI turn logging to Supabase `conversations` table with intent tagging |
+
+---
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    CONVERSATION FLOW                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  You   → "Hi there!"                                        │
-│  Agent → "Welcome to AutoStream! We help content creators   │
-│           edit videos automatically with AI..."             │
-│                                                             │
-│  You   → "How much does the Pro plan cost?"                 │
-│  Agent → "The Pro Plan is $79/month and includes            │
-│           unlimited videos, 4K export, AI captions,         │
-│           and 24/7 priority support."                       │
-│                                                             │
-│  You   → "I want to sign up for my YouTube channel"         │
-│  Agent → "That's great! Could I get your full name?"        │
-│                                                             │
-│  You   → "John Doe"                                         │
-│  Agent → "Nice to meet you! What's your email address?"     │
-│                                                             │
-│  You   → "john@gmail.com"                                   │
-│  Agent → "Which platform do you mainly create for?"         │
-│                                                             │
-│  You   → "YouTube"                                          │
-│                                                             │
-│  Lead captured: John Doe · john@gmail.com · YouTube      │
-│  Agent → "You're all set! We'll reach out shortly. 🚀"      │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+User Message (UI)
+      │
+      ▼
+┌─────────────┐
+│  Flask API  │  server.py — /chat endpoint
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────┐
+│  LangGraph Graph │
+│                  │
+│  START           │
+│    │             │
+│    ▼             │
+│  intent_router ──┼─── Logs human message to Supabase
+│    │             │
+│    ▼             │
+│  route_by_intent │
+│  ┌──┬──┬──┐     │
+│  ▼  ▼  ▼  │     │
+│ greet retrieve qualify
+│  │    │    │     │
+│  │    │    ▼     │
+│  │    │  capture_node ── tools/lead_capture.py ── Supabase leads table
+│  │    │    │     │
+│  └────┴────┘     │
+│       │          │
+│      END         │
+└──────────────────┘
+       │
+       ▼
+  JSON Response → UI
+```
+
+### Key Components
+
+| Module | Role |
+|---|---|
+| `agent/graph.py` | LangGraph state machine — nodes, edges, conditional routing |
+| `agent/intent.py` | LLM-powered intent classifier (greeting / product_inquiry / high_intent) |
+| `agent/nodes.py` | greet, retrieve, qualify, capture nodes |
+| `agent/state.py` | TypedDict state schema shared across all nodes |
+| `agent/memory.py` | MemorySaver checkpointer + Supabase conversation logger |
+| `rag/loader.py` | Loads `autostream_kb.json` into LangChain Documents |
+| `rag/vectorstore.py` | Builds and persists FAISS index |
+| `rag/retriever.py` | Top-K semantic similarity retriever |
+| `rag/chain.py` | Full RAG chain — retriever → prompt → LLM → parser |
+| `tools/lead_capture.py` | Lead capture tool — saves to Supabase + prints confirmation |
+| `ui/index.html` | Full chat UI with intent sidebar and lead card |
+| `server.py` | Flask server exposing `/chat`, `/health`, `/ui/` |
+| `data/autostream_kb.json` | Knowledge base — pricing, features, policies |
+
+---
+
+## 🧠 Architecture Explanation (~200 words)
+
+**Why LangGraph?**
+LangGraph was chosen over a simple chain because the agent needs to behave differently depending on *state* — not just the last message. A greeting should never trigger lead capture; a high-intent signal mid-conversation should immediately switch to qualification, regardless of what the user said. LangGraph's node-edge model makes these conditional flows explicit, testable, and easy to extend. It also provides a built-in checkpointer (MemorySaver) that retains full conversation state across turns per thread ID — enabling true multi-turn memory without manual message history management.
+
+**How State Is Managed:**
+Every conversation turn passes through a shared `AgentState` TypedDict containing: message history, detected intent, and incrementally collected lead fields (`collected_name`, `collected_email`, `collected_platform`). The `intent_router` node reads this state to decide whether to continue qualification or re-route. The `qualify_node` uses sentinel values (`None` vs `""`) to track exactly which fields have been collected, ensuring the lead capture tool is never called prematurely. Each browser session maps to a unique LangGraph `thread_id`, enabling full isolation between concurrent users.
+
+---
+
+## 📱 WhatsApp Deployment via Webhooks
+
+To deploy this agent on WhatsApp using the **WhatsApp Business API (Meta)**:
+
+1. **Register a WhatsApp Business App** on Meta for Developers and obtain a `PHONE_NUMBER_ID` and `ACCESS_TOKEN`.
+
+2. **Set up a Webhook endpoint** — add a new route to `server.py`:
+   ```python
+   @app.post("/webhook/whatsapp")
+   def whatsapp_webhook():
+       data = request.get_json()
+       message = data["entry"][0]["changes"][0]["value"]["messages"][0]
+       user_phone = message["from"]
+       user_text  = message["text"]["body"]
+       # Use phone number as session_id for state isolation
+       reply = invoke_graph(user_text, session_id=user_phone)
+       send_whatsapp_reply(user_phone, reply)
+       return jsonify({"status": "ok"})
+   ```
+
+3. **Verify the webhook** — Meta sends a GET request with a `hub.verify_token` that your server must echo back.
+
+4. **Send replies** using the WhatsApp Cloud API:
+   ```python
+   import requests
+   def send_whatsapp_reply(to, text):
+       requests.post(
+           f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages",
+           headers={"Authorization": f"Bearer {ACCESS_TOKEN}"},
+           json={"messaging_product": "whatsapp", "to": to, "text": {"body": text}}
+       )
+   ```
+
+5. **Deploy** the Flask server to a public HTTPS URL (e.g. Railway, Render, or EC2) — Meta requires HTTPS for webhooks. The same LangGraph graph and RAG pipeline work without any changes.
+
+---
+
+## 🛠️ How to Run Locally
+
+### 1. Clone the repo
+```bash
+git clone https://github.com/raunitsingh/social-to-lead-agentic.git
+cd social-to-lead-agentic
+```
+
+### 2. Create and activate a virtual environment
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Set up environment variables
+Create a `.env` file in the root directory:
+```env
+# LLM Provider — choose one: groq | openai | anthropic | google
+LLM_PROVIDER=groq
+LLM_MODEL=llama-3.3-70b-versatile
+
+# API Keys (only the one matching your provider is required)
+GROQ_API_KEY=your_groq_api_key
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+GOOGLE_API_KEY=your_google_api_key
+
+# Supabase (optional — agent works without it, Supabase just adds persistence)
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_KEY=your_supabase_service_role_key
+```
+
+### 5. Run the server
+```bash
+python server.py
+```
+
+### 6. Open the UI
+```
+http://localhost:8080/ui/index.html
 ```
 
 ---
 
-## 🏗 Architecture
-
-### System Design
+## 💬 Example Conversation Flow
 
 ```
-                        ┌─────────────────────────────────┐
-                        │         User Message             │
-                        └──────────────┬──────────────────┘
-                                       │
-                                       ▼
-                        ┌─────────────────────────────────┐
-                        │        intent_router             │
-                        │  (skips classifier if in         │
-                        │   qualification flow)            │
-                        └──────┬──────────┬───────────────┘
-                               │          │           │
-                    greeting   │          │ inquiry   │ high_intent
-                               ▼          ▼           ▼
-                        ┌──────────┐ ┌──────────┐ ┌──────────────┐
-                        │greet_node│ │retrieve_ │ │ qualify_node │
-                        │          │ │node (RAG)│ │name→email    │
-                        └──────────┘ └──────────┘ │→platform     │
-                               │          │       └──────┬───────┘
-                               │          │               │ all 3 collected?
-                               │          │               ▼
-                               │          │       ┌──────────────┐
-                               │          │       │ capture_node │
-                               │          │       │mock_lead_    │
-                               │          │       │capture()     │
-                               ▼          ▼       └──────────────┘
-                        ┌─────────────────────────────────┐
-                        │              END                 │
-                        └─────────────────────────────────┘
+User:  Hi there!
+Agent: Hey there! 👋 Welcome to AutoStream — the AI-powered video editing
+       platform built for content creators. I can help you explore our
+       pricing, features, or get you signed up. What would you like to know?
+
+User:  What's the Pro plan price?
+Agent: The **Pro Plan** is **$79/month** and includes:
+       • Unlimited videos • 4K resolution export • AI captions
+       • Priority 24/7 support • Auto-publish to YouTube, Instagram & TikTok
+       • Analytics dashboard
+       Want to sign up? 🚀
+
+User:  I want to try the Pro plan for my YouTube channel
+Agent: Awesome! 🎉 I'd love to get you started. Could I get your full name first?
+
+User:  Raunit Singh
+Agent: Nice to meet you, Raunit! 😊 What's your email address?
+
+User:  raunit@email.com
+Agent: Perfect! Last one — which creator platform do you mainly use?
+
+User:  YouTube
+Agent: You're all set, Raunit! 🚀 Our team will reach out to raunit@email.com
+       within 24 hours to activate your AutoStream account. Welcome aboard!
 ```
-
-### Why LangGraph?
-
-LangGraph models the agent as a **directed state graph** — every conversation turn flows through typed nodes connected by conditional edges. This solves three real problems:
-
-1. **State is first-class** — `AgentState` TypedDict holds the full message history, intent, three lead fields, and `lead_captured` flag. All nodes read from and write to this single structure.
-
-2. **Routing is explicit and safe** — Intent detection feeds directly into conditional edges. Once lead qualification starts, the router bypasses the LLM classifier entirely and locks into the qualify flow — preventing names and emails from being misrouted.
-
-3. **Memory via MemorySaver** — LangGraph's built-in checkpointer snapshots state after every node. Each session uses a unique `thread_id` so memory persists perfectly across all turns.
-
-### RAG Pipeline
-
-```
-autostream_kb.json
-        │
-        ▼ loader.py
-  Documents (chunked by unit: plan / policy / FAQ / feature)
-        │
-        ▼ vectorstore.py
-  FAISS index (sentence-transformers/all-MiniLM-L6-v2 embeddings)
-        │
-        ▼ retriever.py
-  Top-4 relevant chunks for query
-        │
-        ▼ chain.py
-  [Context + Question] → Groq LLM → Grounded Answer
-```
-
-Each KB chunk is one atomic unit of knowledge (one plan, one policy, one FAQ). This gives the retriever precise, focused results instead of one giant blob — preventing hallucinations and keeping answers factually grounded.
-
-### Tool Guard Design
-
-```python
-# capture_node only fires when ALL THREE fields are confirmed in state
-if all([name, email, platform]):
-    mock_lead_capture(name, email, platform)   # ← only here
-```
-
-The tool is **structurally impossible to trigger prematurely** — `capture_node` is only reachable from `qualify_node` via a conditional edge that checks all three fields.
 
 ---
 
 ## 📁 Project Structure
 
 ```
-autostream_agent/
-│
-├── config.py                  ← Central config (auto-detects LLM provider)
-├── main.py                    ← CLI entry point with session memory
-├── requirements.txt
-├── .env.example
-├── .gitignore
-│
-├── data/
-│   ├── autostream_kb.json     ← Knowledge base: pricing, plans, policies, FAQs
-│   └── faiss_index/           ← Auto-generated vector store (built on first run)
-│
-├── rag/
-│   ├── loader.py              ← KB → LangChain Documents (chunked by unit)
-│   ├── vectorstore.py         ← FAISS build & load (smart: reuses existing index)
-│   ├── retriever.py           ← Similarity search, top-k retrieval
-│   └── chain.py               ← Full RAG chain: retrieve → prompt → LLM → answer
-│
+social-to-lead-agentic/
 ├── agent/
-│   ├── state.py               ← AgentState TypedDict with add_messages
-│   ├── intent.py              ← LLM classifier → greeting/product_inquiry/high_intent
-│   ├── nodes.py               ← greet, retrieve, qualify, capture nodes
-│   ├── graph.py               ← Compiled LangGraph with conditional routing
-│   └── memory.py              ← Shared MemorySaver checkpointer
-│
-└── tools/
-    └── lead_capture.py        ← mock_lead_capture(name, email, platform)
+│   ├── graph.py          # LangGraph state machine
+│   ├── intent.py         # Intent classifier
+│   ├── memory.py         # Checkpointer + Supabase logger
+│   ├── nodes.py          # greet, retrieve, qualify, capture nodes
+│   └── state.py          # AgentState TypedDict
+├── data/
+│   └── autostream_kb.json  # Knowledge base
+├── rag/
+│   ├── chain.py          # RAG chain
+│   ├── loader.py         # KB loader
+│   ├── retriever.py      # FAISS retriever
+│   └── vectorstore.py    # FAISS index builder
+├── tools/
+│   └── lead_capture.py   # Lead capture tool
+├── ui/
+│   └── index.html        # Chat UI
+├── config.py             # Centralised config + logging
+├── server.py             # Flask API server
+├── supabase.sql          # DB schema
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## ⚡ Quick Start
+## 🗄️ Database Schema (Supabase)
 
-### Prerequisites
-- Python 3.9+
-- Free Groq API key → [console.groq.com](https://console.groq.com)
-
-### 1. Clone
-```bash
-git clone https://github.com/YOUR_USERNAME/autostream-agent.git
-cd autostream-agent
+**`leads` table** — one row per captured lead
+```sql
+id, session_id, name, email, platform, captured_at, source
 ```
 
-### 2. Virtual environment
-```bash
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-```
-
-### 3. Install dependencies
-```bash
-pip install -r requirements.txt
-pip install grandalf
-```
-
-### 4. Configure API key
-```bash
-cp .env.example .env
-nano .env
-```
-```env
-GROQ_API_KEY=gsk_your_key_here
-LLM_MODEL=llama-3.3-70b-versatile
-```
-
-### 5. Set Python path
-```bash
-export PYTHONPATH="$(pwd)"
-```
-
-### 6. Run
-```bash
-python main.py
-```
-
-> **Note:** First run downloads the embedding model (~90MB). Subsequent runs load from the saved FAISS index and start instantly.
-
----
-
-## 📱 WhatsApp Deployment
-
-### Architecture
-
-```
-WhatsApp User
-      │  (sends message)
-      ▼
-Meta WhatsApp Business API
-      │  HTTP POST webhook
-      ▼
-FastAPI Server  ──── /webhook endpoint
-      │  extract message + sender_id
-      ▼
-AutoStream LangGraph Agent
-      │  thread_id = sender phone number
-      │  full memory per unique user
-      ▼
-Meta Graph API  ──── send reply
-      │
-      ▼
-WhatsApp User receives response
-```
-
-### Step-by-Step Integration
-
-**1. Create a Meta App**
-- Go to [developers.facebook.com](https://developers.facebook.com)
-- Create App → Add WhatsApp product
-- Get test phone number + access token
-
-**2. FastAPI webhook server**
-
-```python
-from fastapi import FastAPI, Request
-from langchain_core.messages import HumanMessage
-from agent.graph import graph
-
-app = FastAPI()
-
-VERIFY_TOKEN = "your_secret_verify_token"
-
-@app.get("/webhook")
-async def verify(
-    hub_mode: str = "",
-    hub_challenge: str = "",
-    hub_verify_token: str = ""
-):
-    """Meta calls this once to verify your webhook URL."""
-    if hub_verify_token == VERIFY_TOKEN:
-        return int(hub_challenge)
-    return {"error": "Invalid verify token"}
-
-@app.post("/webhook")
-async def receive_message(request: Request):
-    """Receives every WhatsApp message and returns agent reply."""
-    body    = await request.json()
-    entry   = body["entry"][0]["changes"][0]["value"]
-    msg     = entry["messages"][0]
-    text    = msg["text"]["body"]
-    sender  = msg["from"]                    # unique WhatsApp number
-
-    # thread_id = sender number → persistent memory per user
-    config  = {"configurable": {"thread_id": sender}}
-    result  = graph.invoke(
-        {"messages": [HumanMessage(content=text)]},
-        config=config
-    )
-    reply   = result["messages"][-1].content
-
-    # Send reply back via Meta Graph API
-    import httpx
-    httpx.post(
-        f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages",
-        headers={"Authorization": f"Bearer {ACCESS_TOKEN}"},
-        json={
-            "messaging_product": "whatsapp",
-            "to": sender,
-            "text": {"body": reply}
-        }
-    )
-    return {"status": "ok"}
-```
-
-**3. Test locally with ngrok**
-```bash
-pip install fastapi uvicorn httpx
-uvicorn webhook:app --port 8000
-
-# In another terminal:
-ngrok http 8000
-```
-Register the ngrok HTTPS URL in the Meta dashboard as your webhook URL.
-
-**4. Deploy to production**
-```bash
-# Railway, Render, or any cloud with HTTPS
-# Set GROQ_API_KEY as an environment variable in your dashboard
+**`conversations` table** — one row per message turn
+```sql
+id, session_id, role, content, intent, created_at
 ```
 
 ---
 
-## 🛠 Tech Stack
+## 📦 Tech Stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| Agent Framework | LangGraph | Stateful graph, conditional routing, memory |
-| LLM | Groq · llama-3.3-70b | Free tier, fastest inference |
-| Embeddings | sentence-transformers/all-MiniLM-L6-v2 | Free, local, no API key needed |
-| Vector Store | FAISS | Local, no server, instant similarity search |
-| State & Memory | LangGraph MemorySaver | Per-session persistence via thread_id |
-| Config | python-dotenv | Clean env management |
-| WhatsApp | Meta Business API + FastAPI | Production webhook integration |
-
----
-
-## ✅ Evaluation Checklist
-
-| Criterion | Status | Details |
-|---|---|---|
-| Agent reasoning & intent detection | ✅ | LLM classifier with sanitized output, 8/8 test cases pass |
-| Correct use of RAG | ✅ | FAISS + HuggingFace + LangChain retriever, KB-grounded answers |
-| Clean state management | ✅ | AgentState TypedDict + MemorySaver across 5–6 turns |
-| Proper tool calling logic | ✅ | Fires only when name + email + platform all confirmed |
-| Code clarity & structure | ✅ | One responsibility per file, fully typed and documented |
-| Real-world deployability | ✅ | WhatsApp webhook architecture with full implementation |
+| Layer | Technology |
+|---|---|
+| Agent Framework | LangGraph 0.2+ |
+| LLM | Groq — LLaMA 3.3 70B |
+| RAG | FAISS + LangChain |
+| Backend | Flask |
+| Database | Supabase (PostgreSQL) |
+| Frontend | HTML / CSS / JavaScript |
+| Deployment | ngrok |
 
 ---
 
-## 🔑 Knowledge Base
+## 👤 Author
 
-The agent answers questions from `data/autostream_kb.json`:
-
-| Plan | Price | Key Features |
-|---|---|---|
-| Basic | $29/mo | 10 videos, 720p, auto-cut, email support |
-| Pro | $79/mo | Unlimited, 4K, AI captions, 24/7 support, auto-publish |
-
-**Policies:** No refunds after 7 days · 24/7 support Pro only
-
----
-
-<div align="center">
-
-Built by **[Your Name]** for the **ServiceHive / Inflx ML Internship Assignment**
-
-</div>
+**Raunit Singh**
+Assignment submission for **Machine Learning Intern** role at **ServiceHive**
