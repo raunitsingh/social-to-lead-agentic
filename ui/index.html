@@ -328,6 +328,7 @@ function qualify(raw) {
 function detectIntent(t) {
   const greet   = ['hi','hello','hey','howdy','sup','good morning','good evening','whats up'];
   const convert = ['sign up','signup','get started','subscribe','buy','purchase','want to try','join now','enroll','register','i want to','i would like to','let me','ready to'];
+  if (['yes','yeah','sure','yep','ok','okay','sounds good'].includes(t)) return 'high_intent';
   if (greet.some(g => t === g || t.startsWith(g+' ') || t.startsWith(g+'!'))) return 'greeting';
   if (convert.some(c => t.includes(c))) return 'high_intent';
   return 'product_inquiry';
@@ -335,6 +336,10 @@ function detectIntent(t) {
 
 // ── RAG knowledge base ────────────────────────────────────────────────────────
 function rag(t) {
+  // Yes / affirmative → treat as high intent
+  if (t === 'yes' || t === 'yeah' || t === 'sure' || t === 'yep' || t === 'ok' || t === 'okay' || t === 'sounds good' || t === 'let us go' || t === "let's go")
+    return { type: "high_intent", text: "" };
+
   // Pro plan pricing
   if ((t.includes('pro') || t.includes('professional')) && hasPriceWord(t))
     return "The **Pro Plan** is **$79/month** and includes:\n• Unlimited videos\n• 4K resolution export\n• AI captions (95%+ accuracy, 20+ languages)\n• Priority 24/7 support\n• Auto-publish to YouTube, Instagram & TikTok\n• Analytics dashboard\n\nWant to sign up?";
