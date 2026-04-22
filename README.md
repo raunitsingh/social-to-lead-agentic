@@ -7,6 +7,7 @@
   <img src="https://img.shields.io/badge/Groq-LLaMA_3.3_70B-orange?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/FAISS-RAG_Pipeline-purple?style=for-the-badge"/>
   <img src="https://img.shields.io/badge/Supabase-Database-teal?style=for-the-badge"/>
+  🌐 **Live Demo:** https://aesthetic-kitsune-f74820.netlify.app
 </p>
 
 > A production-grade conversational AI agent for **AutoStream** — an AI-powered video editing SaaS. Built with LangGraph, FAISS-powered RAG, real-time lead capture, Supabase persistence, and a fully functional chat UI.
