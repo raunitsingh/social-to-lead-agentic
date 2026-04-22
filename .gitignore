@@ -25,4 +25,5 @@ __pycache__/
 Thumbs.db
 
 # VS Code (optional but clean)
-.vscode/
+.vscode/test_phase1.py
+validate_phase1.py
