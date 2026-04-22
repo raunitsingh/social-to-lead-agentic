@@ -212,10 +212,16 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </div>
 
 <script>
-// ── Session ID — persists per browser tab ─────────────────────────────────────
-// Each tab gets a unique ID so LangGraph memory is isolated
-let SESSION_ID = localStorage.getItem('autostream_session') || crypto.randomUUID();
-localStorage.setItem('autostream_session', SESSION_ID);
+// ── Session state ─────────────────────────────────────────────────────────────
+const S = {
+  intent: null,
+  qualStarted: false,
+  waitingFor: null,   // 'name' | 'email' | 'platform'
+  name: null,
+  email: null,
+  platform: null,
+  captured: false
+};
 
 // ── DOM ───────────────────────────────────────────────────────────────────────
 const msgEl   = document.getElementById('messages');
@@ -236,7 +242,7 @@ function sendChip(el) {
   sendMessage();
 }
 
-// ── Send — now calls Flask /chat → LangGraph → Supabase ──────────────────────
+// ── Send ──────────────────────────────────────────────────────────────────────
 async function sendMessage() {
   const text = inputEl.value.trim();
   if (!text || sendBtn.disabled) return;
@@ -249,96 +255,159 @@ async function sendMessage() {
   sendBtn.disabled = true;
 
   const typId = showTyping();
+  await sleep(500 + Math.random() * 400);
 
-  try {
-    const reply = getLocalResponse(userText);
-    removeTyping(typId);
-    addBubble('agent', reply.text);
-    if (reply.leadCard) showLeadCard(reply.leadCard);
-    updateSidebar();
-  } catch (e) {
-    removeTyping(typId);
-    addBubble('agent', 'Something went wrong. Please try again.');
+  const resp = getResponse(text);
+  removeTyping(typId);
+
+  if (resp.leadCard) {
+    addLeadCard(resp.leadCard);
+    await sleep(200);
+    addBubble('agent', resp.text);
+  } else {
+    addBubble('agent', resp.text);
   }
 
+  refreshSidebar();
   sendBtn.disabled = false;
   inputEl.focus();
 }
 
-// ── Sidebar refresh — now driven by server response ──────────────────────────
-function refreshSidebar(resp) {
-  // Intent badge
-  const badge = document.getElementById('intent-badge');
-  const intentMap = {
-    greeting:        ['greeting', '👋 greeting'],
-    product_inquiry: ['inquiry',  '🔍 product inquiry'],
-    high_intent:     ['high',     '🔥 high intent'],
-  };
-  if (resp.intent) {
-    const [cls, label] = intentMap[resp.intent] || ['', '— unknown'];
-    badge.className  = 'intent-badge ' + cls;
-    badge.textContent = label;
+// ── Core response logic ───────────────────────────────────────────────────────
+function getResponse(raw) {
+  const t = raw.toLowerCase().trim();
+
+  // ── Qualification flow — highest priority once started ────────────────────
+  if (S.qualStarted) {
+    return qualify(raw);
   }
 
-  // Lead fields — update only when values are present
-  if (resp.name)     setField('name',     resp.name);
-  if (resp.email)    setField('email',    resp.email);
-  if (resp.platform) setField('platform', resp.platform);
+  // ── Intent detection ──────────────────────────────────────────────────────
+  const intent = detectIntent(t);
+  S.intent = intent;
+
+  if (intent === 'greeting') {
+    return { text: "Hey there! 👋 Welcome to **AutoStream** — the AI-powered video editing platform built for content creators.\n\nI can help you explore our plans, answer questions, or get you signed up. What would you like to know?" };
+  }
+
+  if (intent === 'high_intent') {
+    S.qualStarted = true;
+    S.waitingFor  = 'name';
+    return { text: "Awesome! 🎉 I'd love to get you started with AutoStream.\n\nCould I get your **full name** first?" };
+  }
+
+  // ── RAG retrieval ─────────────────────────────────────────────────────────
+  return { text: rag(t) };
 }
 
-function setField(key, val) {
-  if (!val) return;
-  document.getElementById('f-' + key).classList.add('filled');
-  const v = document.getElementById('v-' + key);
-  v.textContent = val; v.classList.add('set');
-  const c = document.getElementById('c-' + key);
-  c.textContent = '✓'; c.classList.add('done');
+function qualify(raw) {
+  if (S.waitingFor === 'name') {
+    S.name       = raw;
+    S.waitingFor = 'email';
+    return { text: "Nice to meet you, **" + raw + "**! 😊\n\nWhat's your **email address**?" };
+  }
+  if (S.waitingFor === 'email') {
+    S.email      = raw;
+    S.waitingFor = 'platform';
+    return { text: "Perfect! Last one — which **creator platform** do you mainly use?\n*(YouTube, Instagram, TikTok, etc.)*" };
+  }
+  if (S.waitingFor === 'platform') {
+    S.platform   = raw;
+    S.waitingFor = null;
+    S.captured   = true;
+    S.intent     = 'high_intent';
+    return {
+      leadCard: { name: S.name, email: S.email, platform: raw },
+      text: "You're all set, **" + S.name + "**! 🚀\n\nOur team will reach out to **" + S.email + "** within 24 hours to activate your AutoStream account. Welcome aboard!"
+    };
+  }
+  return { text: "Thanks! Setting up your account..." };
 }
 
-// ── Reset — clears LangGraph session on server too ───────────────────────────
-async function resetSession() {
-  // Tell server to clear this session's LangGraph memory
-  try {
-    await fetch('/session/' + SESSION_ID, { method: 'DELETE' });
-  } catch (_) {}
-
-  // Generate new session ID
-  SESSION_ID = crypto.randomUUID();
-  localStorage.setItem('autostream_session', SESSION_ID);
-
-  // Reset UI
-  msgEl.innerHTML = `<div class="welcome" id="welcome">
-    <div class="welcome-icon">🤖</div>
-    <h2>AutoStream Sales Agent</h2>
-    <p>Ask about pricing, features, or say you're ready to sign up. The agent guides you through the full lead capture flow.</p>
-    <div class="starter-chips">
-      <div class="chip" onclick="sendChip(this)">Hi there! 👋</div>
-      <div class="chip" onclick="sendChip(this)">How much is the Pro plan?</div>
-      <div class="chip" onclick="sendChip(this)">Does Basic include AI captions?</div>
-      <div class="chip" onclick="sendChip(this)">What's the refund policy?</div>
-      <div class="chip" onclick="sendChip(this)">I want to sign up for YouTube</div>
-    </div></div>`;
-
-  ['name','email','platform'].forEach(k => {
-    document.getElementById('f-'+k).classList.remove('filled');
-    const v = document.getElementById('v-'+k); v.textContent = 'Not collected'; v.classList.remove('set');
-    const c = document.getElementById('c-'+k); c.textContent = '○'; c.classList.remove('done');
-  });
-  document.getElementById('intent-badge').className  = 'intent-badge';
-  document.getElementById('intent-badge').textContent = '— waiting';
-  inputEl.focus();
+// ── Intent detection ──────────────────────────────────────────────────────────
+function detectIntent(t) {
+  const greet   = ['hi','hello','hey','howdy','sup','good morning','good evening','whats up'];
+  const convert = ['sign up','signup','get started','subscribe','buy','purchase','want to try','join now','enroll','register','i want to','i would like to','let me','ready to'];
+  if (greet.some(g => t === g || t.startsWith(g+' ') || t.startsWith(g+'!'))) return 'greeting';
+  if (convert.some(c => t.includes(c))) return 'high_intent';
+  return 'product_inquiry';
 }
 
-// ── UI helpers (unchanged) ────────────────────────────────────────────────────
+// ── RAG knowledge base ────────────────────────────────────────────────────────
+function rag(t) {
+  // Pro plan pricing
+  if ((t.includes('pro') || t.includes('professional')) && hasPriceWord(t))
+    return "The **Pro Plan** is **$79/month** and includes:\n• Unlimited videos\n• 4K resolution export\n• AI captions (95%+ accuracy, 20+ languages)\n• Priority 24/7 support\n• Auto-publish to YouTube, Instagram & TikTok\n• Analytics dashboard\n\nWant to sign up?";
+
+  // Basic plan pricing
+  if (t.includes('basic') && hasPriceWord(t))
+    return "The **Basic Plan** is **$29/month** and includes:\n• 10 videos per month\n• 720p resolution export\n• Auto-cut & trim\n• Basic color correction\n• Email support (48hr response)\n\nNeed more? The Pro Plan at $79/month has no limits.";
+
+  // AI captions — specific question "does basic include"
+  if ((t.includes('basic') || t.includes('$29')) && (t.includes('caption') || t.includes('subtitle') || t.includes('include') || t.includes('have') || t.includes('support')))
+    return "**No** — AI Captions are **not available on the Basic Plan**.\n\nCaptions are exclusive to the **Pro Plan ($79/mo)**. The Basic Plan only includes auto-cut and 720p export.\n\nWant to upgrade to Pro to get AI captions?";
+
+  // AI captions general
+  if (t.includes('caption') || t.includes('subtitle'))
+    return "**AI Captions** are available on the **Pro Plan ($79/mo)** only — not on Basic.\n\nOur model achieves 95%+ accuracy and supports 20+ languages. Captions are editable before export.";
+
+  // 4K / resolution
+  if (t.includes('4k') || t.includes('resolution') || t.includes('quality'))
+    return "**4K export** is a Pro Plan ($79/mo) feature. The Basic Plan exports at **720p only**.\n\nIf you create high-quality content for YouTube or brands, Pro is the better choice.";
+
+  // Compare plans
+  if (t.includes('compar') || t.includes('differ') || t.includes('vs') || t.includes('versus') || (t.includes('basic') && t.includes('pro')))
+    return "**Basic vs Pro:**\n\n| Feature | Basic $29 | Pro $79 |\n|---|---|---|\n| Videos | 10/month | Unlimited |\n| Resolution | 720p | 4K |\n| AI Captions | ✗ | ✓ |\n| Support | Email 48hr | 24/7 Live |\n| Auto-publish | ✗ | ✓ |\n\nWhich plan sounds right for you?";
+
+  // All plans / pricing overview
+  if (hasPriceWord(t) || t.includes('plan') || t.includes('tier') || t.includes('option'))
+    return "AutoStream has two plans:\n\n**Basic — $29/month**\n10 videos, 720p, auto-cut, email support\n\n**Pro — $79/month**\nUnlimited videos, 4K, AI captions, 24/7 support, auto-publish\n\nWhich one sounds right for you?";
+
+  // Refund
+  if (t.includes('refund') || t.includes('cancel') || t.includes('money back'))
+    return "**Refund Policy:** AutoStream offers a full refund within the first **7 days** of purchase. After 7 days, no refunds are issued regardless of usage.\n\nYou can cancel anytime to stop future billing — no contracts.";
+
+  // Support
+  if (t.includes('support') || t.includes('help') || t.includes('contact') || t.includes('customer'))
+    return "**24/7 live support** is available exclusively for **Pro Plan** subscribers via in-app chat.\n\nBasic Plan users get email support with a 48-hour response window.\n\nEmail: support@autostream.io";
+
+  // Unlimited videos
+  if (t.includes('unlimited') || (t.includes('video') && (t.includes('how many') || t.includes('limit'))))
+    return "**Unlimited videos** is a **Pro Plan** feature ($79/mo).\n\nThe Basic Plan allows **10 videos per month**. If you publish frequently, Pro is much better value.";
+
+  // Auto-publish / integrations
+  if (t.includes('youtube') || t.includes('instagram') || t.includes('tiktok') || t.includes('publish') || t.includes('upload') || t.includes('integrat'))
+    return "**Auto-Publish** (Pro Plan only) lets you connect YouTube, Instagram, and TikTok accounts and publish directly from AutoStream on a schedule.\n\nBasic Plan requires manual export and upload.";
+
+  // Free trial
+  if (t.includes('trial') || t.includes('free') || t.includes('test'))
+    return "Yes! AutoStream offers a **7-day free trial** on the Pro Plan — **no credit card required**.\n\nAfter the trial you're billed at $79/month unless you cancel. Want to get started?";
+
+  // Basic features
+  if (t.includes('basic') || t.includes('$29') || t.includes('29'))
+    return "The **Basic Plan ($29/mo)** is great for beginners:\n• 10 videos/month\n• 720p resolution\n• Auto-cut & trim\n• Basic color correction\n• Email support\n\nNo AI captions, no 4K, no 24/7 support. Need those? Go Pro.";
+
+  // Fallback
+  return "Great question! I can help with AutoStream's **pricing**, **features**, **refund policy**, or get you **signed up**.\n\nTry asking:\n• \"How much is the Pro plan?\"\n• \"Does Basic include AI captions?\"\n• \"What's the refund policy?\"\n• \"I want to sign up\"";
+}
+
+function hasPriceWord(t) {
+  return ['price','cost','how much','pricing','charge','fee','rate','pay'].some(w => t.includes(w));
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
 function addBubble(role, text) {
   const row = document.createElement('div');
   row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+
   const av = document.createElement('div');
   av.className = 'avatar ' + (role === 'user' ? 'user-av' : 'agent-av');
   av.textContent = role === 'user' ? '👤' : '🤖';
+
   const bub = document.createElement('div');
   bub.className = 'bubble ' + role;
   bub.innerHTML = fmt(text);
+
   row.appendChild(av);
   row.appendChild(bub);
   msgEl.appendChild(row);
@@ -366,7 +435,7 @@ function addLeadCard(d) {
 }
 
 function showTyping() {
-  const id  = 'typ-' + Date.now();
+  const id = 'typ-' + Date.now();
   const row = document.createElement('div');
   row.className = 'msg-row'; row.id = id;
   row.innerHTML = '<div class="avatar agent-av">🤖</div><div class="typing"><span></span><span></span><span></span></div>';
@@ -375,14 +444,14 @@ function showTyping() {
 }
 
 function removeTyping(id) { document.getElementById(id)?.remove(); }
-function scroll()         { msgEl.scrollTop = msgEl.scrollHeight; }
-function sleep(ms)        { return new Promise(r => setTimeout(r, ms)); }
+function scroll() { msgEl.scrollTop = msgEl.scrollHeight; }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function fmt(text) {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n\|(.+)\|\n\|[-|]+\|\n((?:\|.+\|\n?)+)/g, (_, h, rows) => {
-      const headers  = h.split('|').filter(Boolean).map(c => `<th>${c.trim()}</th>`).join('');
+      const headers = h.split('|').filter(Boolean).map(c => `<th>${c.trim()}</th>`).join('');
       const bodyRows = rows.trim().split('\n').map(r => {
         const cells = r.split('|').filter(Boolean).map(c => `<td>${c.trim()}</td>`).join('');
         return `<tr>${cells}</tr>`;
@@ -390,6 +459,63 @@ function fmt(text) {
       return `<table style="width:100%;border-collapse:collapse;margin:8px 0;font-size:12px"><thead><tr>${headers}</tr></thead><tbody>${bodyRows}</tbody></table>`;
     })
     .replace(/\n/g, '<br>');
+}
+
+// ── Sidebar refresh ───────────────────────────────────────────────────────────
+function refreshSidebar() {
+  // Intent badge
+  const badge = document.getElementById('intent-badge');
+  const intentMap = {
+    greeting:        ['greeting', '👋 greeting'],
+    product_inquiry: ['inquiry',  '🔍 product inquiry'],
+    high_intent:     ['high',     '🔥 high intent'],
+  };
+  if (S.intent || S.qualStarted) {
+    const key = S.qualStarted ? 'high_intent' : S.intent;
+    const [cls, label] = intentMap[key] || ['','— unknown'];
+    badge.className = 'intent-badge ' + cls;
+    badge.textContent = label;
+  }
+
+  // Lead fields
+  setField('name',     S.name);
+  setField('email',    S.email);
+  setField('platform', S.platform);
+}
+
+function setField(key, val) {
+  if (!val) return;
+  document.getElementById('f-' + key).classList.add('filled');
+  const v = document.getElementById('v-' + key);
+  v.textContent = val; v.classList.add('set');
+  const c = document.getElementById('c-' + key);
+  c.textContent = '✓'; c.classList.add('done');
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+function resetSession() {
+  Object.assign(S, { intent:null, qualStarted:false, waitingFor:null, name:null, email:null, platform:null, captured:false });
+
+  msgEl.innerHTML = `<div class="welcome" id="welcome">
+    <div class="welcome-icon">🤖</div>
+    <h2>AutoStream Sales Agent</h2>
+    <p>Ask about pricing, features, or say you're ready to sign up. The agent guides you through the full lead capture flow.</p>
+    <div class="starter-chips">
+      <div class="chip" onclick="sendChip(this)">Hi there! 👋</div>
+      <div class="chip" onclick="sendChip(this)">How much is the Pro plan?</div>
+      <div class="chip" onclick="sendChip(this)">Does Basic include AI captions?</div>
+      <div class="chip" onclick="sendChip(this)">What's the refund policy?</div>
+      <div class="chip" onclick="sendChip(this)">I want to sign up for YouTube</div>
+    </div></div>`;
+
+  ['name','email','platform'].forEach(k => {
+    document.getElementById('f-'+k).classList.remove('filled');
+    const v = document.getElementById('v-'+k); v.textContent = 'Not collected'; v.classList.remove('set');
+    const c = document.getElementById('c-'+k); c.textContent = '○'; c.classList.remove('done');
+  });
+  document.getElementById('intent-badge').className = 'intent-badge';
+  document.getElementById('intent-badge').textContent = '— waiting';
+  inputEl.focus();
 }
 </script>
 </body>
