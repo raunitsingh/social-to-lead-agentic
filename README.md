@@ -16,9 +16,7 @@
 
 ## 🚀 Live Demo
 
-**🌐 Try it now:** [`aesthetic-kitsune-f74820.netlify.app/
-Resources
-`](https://nemeses-deflator-aspirin.ngrok-free.app/ui/index.html)
+**🌐 Try it now:** [`aesthetic-kitsune-f74820.netlify.app/`](https://nemeses-deflator-aspirin.ngrok-free.app/ui/index.html)
 
 > Click **"Visit Site"** on the ngrok warning page to access the demo.
 
