@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+
+# Environment variables (API keys)
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Vector DB / embeddings (FAISS)
+*.faiss
+*.pkl
+*.index
+
+# Model files (if any downloaded)
+*.bin
+*.pt
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# VS Code (optional but clean)
+.vscode/
