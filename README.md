@@ -47,7 +47,7 @@ AutoStream Agent is a **production-grade conversational AI** built for a fiction
 │  You   → "How much does the Pro plan cost?"                 │
 │  Agent → "The Pro Plan is $79/month and includes            │
 │           unlimited videos, 4K export, AI captions,         │
-│           and 24/7 priority support."                        │
+│           and 24/7 priority support."                       │
 │                                                             │
 │  You   → "I want to sign up for my YouTube channel"         │
 │  Agent → "That's great! Could I get your full name?"        │
@@ -60,7 +60,7 @@ AutoStream Agent is a **production-grade conversational AI** built for a fiction
 │                                                             │
 │  You   → "YouTube"                                          │
 │                                                             │
-│  ✅ Lead captured: John Doe · john@gmail.com · YouTube      │
+│  Lead captured: John Doe · john@gmail.com · YouTube      │
 │  Agent → "You're all set! We'll reach out shortly. 🚀"      │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
@@ -90,7 +90,7 @@ AutoStream Agent is a **production-grade conversational AI** built for a fiction
                         │greet_node│ │retrieve_ │ │ qualify_node │
                         │          │ │node (RAG)│ │name→email    │
                         └──────────┘ └──────────┘ │→platform     │
-                               │          │        └──────┬───────┘
+                               │          │       └──────┬───────┘
                                │          │               │ all 3 collected?
                                │          │               ▼
                                │          │       ┌──────────────┐
