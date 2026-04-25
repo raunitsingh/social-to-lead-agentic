@@ -455,7 +455,7 @@ CREATE TABLE conversations (
 
 <div align="center">
 
-Built by **Raunit singh** for the **Machine Learning Intern** role at **ServiceHive / Inflx**
+Built by **Raunit Singh** for the **Machine Learning Intern** role at **ServiceHive / Inflx**
 
 **[🌐 Live Demo](https://aesthetic-kitsune-f74820.netlify.app/)** · **[📹 Demo Video](https://youtu.be/64B2cnOab0Y)**
 
